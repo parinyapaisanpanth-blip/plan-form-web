@@ -120,6 +120,58 @@ aside{background:var(--surface);border-right:1px solid var(--border);padding:16p
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* ═══════════════════ FORM RENDERING (PDF output) ══════════════════════════ */
+#form-pages{display:none}
+
+@media print{
+  body>*:not(#form-pages){display:none!important}
+  #form-pages{display:block!important}
+  @page{size:A4 portrait;margin:0}
+  .form-page{width:210mm;min-height:297mm;page-break-after:always;page-break-inside:avoid}
+  .form-page:last-child{page-break-after:auto}
+}
+
+/* Form page styles - matches Excel exactly */
+.form-page{
+  width:210mm;min-height:297mm;background:#fff;
+  font-family:'Leelawadee UI','Leelawadee','Tahoma',sans-serif;
+  font-size:10pt;color:#000;
+  padding:4mm 5mm 4mm 5mm;
+  position:relative;box-sizing:border-box;
+}
+
+/* FORM TABLE - the main grid */
+.ft{width:100%;border-collapse:collapse;table-layout:fixed}
+.ft td,.ft th{padding:0;margin:0;vertical-align:middle;font-family:'Leelawadee UI','Leelawadee','Tahoma',sans-serif;overflow:hidden}
+.b-all{border:0.4pt solid #000}
+.b-t{border-top:0.4pt solid #000}
+.b-b{border-bottom:0.4pt solid #000}
+.b-l{border-left:0.4pt solid #000}
+.b-r{border-right:0.4pt solid #000}
+.b-tb{border-top:0.4pt solid #000;border-bottom:0.4pt solid #000}
+
+/* yellow fill */
+.fy{background:#FFFF00}
+/* light blue fill */
+.fb{background:#DDEEFF}
+
+/* text helpers */
+.tc{text-align:center}.tl{text-align:left}.tr{text-align:right}
+.bold{font-weight:bold}
+.fs8{font-size:8pt}.fs9{font-size:9pt}.fs10{font-size:10pt}.fs11{font-size:10.5pt}
+.fs12{font-size:12pt}.fs13{font-size:12.5pt}.fs14{font-size:14pt}.fs16{font-size:16pt}
+.blue-text{color:#0066FF}
+
+/* checkbox/circle symbols */
+.cb{font-family:'Calibri','Arial',sans-serif}
+.cbig{font-family:'Calibri','Arial',sans-serif;font-size:22pt;line-height:1}
+.cbig2{font-family:'Calibri','Arial',sans-serif;font-size:18pt;line-height:1}
+.circle-o{font-family:'Calibri','Arial Unicode MS',sans-serif;font-size:14pt}
+.bullet-filled{font-family:'Yu Gothic UI','Yu Gothic','MS Gothic','Arial',sans-serif;font-size:15pt}
+
+/* underline for fill-in fields */
+.underline{border-bottom:0.5pt solid #000;display:inline-block;min-width:40px}
 </style>
 </head>
 <body>
@@ -256,15 +308,16 @@ aside{background:var(--surface);border-right:1px solid var(--border);padding:16p
     <div class="pbar-bg"><div class="pbar" id="pbar" style="width:0%"></div></div>
     <div class="stats-row" id="done-stats"></div>
     <div class="btn-row" style="justify-content:center;gap:12px;flex-wrap:wrap">
-      <button class="btn btn-success" id="dlBtn" onclick="downloadXlsx()" style="font-size:14px;padding:11px 22px">⬇️ ดาวน์โหลดไฟล์ Excel</button>
+      <button class="btn btn-success" id="dlBtn" onclick="downloadXlsx()" style="font-size:14px;padding:11px 22px">⬇️ ดาวน์โหลด Excel</button>
+      <button class="btn btn-primary" id="pdfBtn" onclick="downloadPdf()" style="font-size:14px;padding:11px 22px">🖨️ ดาวน์โหลด PDF (ไฟล์เดียว)</button>
       <button class="btn" onclick="resetAll()">🔄 เริ่มใหม่</button>
     </div>
   </div>
   <div class="info-box">
     <div class="info-box-head">💡 วิธีใช้ไฟล์ที่ได้</div>
     <p style="font-size:12px;color:var(--muted);line-height:1.8">
-      ไฟล์ Excel ที่ได้มี <strong style="color:var(--text)">1 ชีตต่อ 1 ใบบันทึก</strong> — เปิดด้วย Excel แล้วสั่งพิมพ์ได้ทันที (พื้นที่พิมพ์ A4 ตั้งค่าไว้แล้วในเทมเพลตต้นฉบับ)<br>
-      ฟอร์แมต เส้นขอบ ฟอนต์ และวงกลมในฟอร์ม <strong style="color:var(--text)">เหมือนต้นฉบับ 100%</strong> เพราะระบบเติมข้อมูลลงไฟล์ต้นฉบับจริง
+      <strong style="color:var(--text)">⬇️ Excel</strong> — 1 ชีตต่อ 1 ใบบันทึก เปิดด้วย Excel สั่งพิมพ์ได้ทันที · ฟอร์แมต/เส้นขอบ/ฟอนต์/วงกลม <strong style="color:var(--text)">เหมือนต้นฉบับ 100%</strong> (เติมข้อมูลลงไฟล์ต้นฉบับจริง)<br>
+      <strong style="color:var(--text)">🖨️ PDF</strong> — ทุกใบรวมในไฟล์เดียว สะดวกพิมพ์/ส่งต่อ · กดแล้วเลือก <strong style="color:var(--text)">"Save as PDF"</strong> ในหน้าต่างพิมพ์ (ตั้ง A4, ไม่มี Header/Footer) · หน้าตาใกล้เคียงต้นฉบับมาก แต่ถ้าต้องการเป๊ะ 100% ให้ใช้ไฟล์ Excel
     </p>
   </div>
 </div>
@@ -388,12 +441,27 @@ async function parsePlan(buf) {
     const getV = c => { const cell = ws[XLSX.utils.encode_cell({r,c})]; return cell ? String(cell.v==null?'':cell.v) : ''; };
     const bVal = getV(1), cVal = getV(2), dVal = getV(3), eVal = getV(4);
     if (!bVal) continue;
-    // Header row: dept [line : code]   (accept ANY uppercase dept code, not a fixed list)
-    const hm = bVal.match(/^([A-Z]{2,4})\s*\[([^\]:]+)/);
-    if (hm && !/^\d+$/.test(bVal.trim())) { dept = hm[1].trim(); line = hm[2].trim(); continue; }
+    const bTrim = bVal.trim();
+    const isNum = /^\d+$/.test(bTrim);
+    if (!isNum) {
+      // Header row format: <DEPT> [<LINE> : <CODE>] [optional CLn tag]
+      // The line/code bracket is the FIRST bracket group containing ":".
+      // DEPT = everything before that bracket (may itself contain "[B]" etc.).
+      const cb = bVal.match(/\[([^\[\]]*?):[^\[\]]*\]/);
+      if (cb) {
+        dept = bVal.slice(0, cb.index).trim();
+        line = cb[1].trim();
+        // If a trailing [CLn] tag exists, use it as the production line.
+        const clm = bVal.match(/\[\s*(CL\d+)\s*\]\s*$/i);
+        if (clm) line = clm[1].toUpperCase();
+      }
+      continue; // non-numeric row is never a data row
+    }
     // Data row
-    if (cVal && eVal && /^\d+$/.test(bVal.trim())) {
-      const desc = eVal.replace(/\s*\(.*/, '').trim();
+    if (cVal && eVal) {
+      // Keep model parens like (120 Kgs)/(NB1200A)/(1292883);
+      // drop only the trailing interval code like (6M-1-1)/(1M-2-2)/(2Y-1-1).
+      const desc = eVal.replace(/\s*\(\s*\d+[A-Za-z]*\s*-\s*\d+\s*-\s*\d+\s*\)\s*$/, '').trim();
       const xlRow = r + 1;
       const day = rowToDay[xlRow] || null;
       const dateStr = day ? String(day).padStart(2,'0') + '/' + mm + '/' + yyyy : '';
@@ -606,6 +674,28 @@ function downloadXlsx() {
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 }
 
+// ─── PDF (build HTML form pages + browser print → single PDF) ────────────────
+async function downloadPdf() {
+  if (!S.records.length) return;
+  const btn = document.getElementById('pdfBtn');
+  const old = btn.innerHTML;
+  btn.disabled = true;
+  const container = document.getElementById('form-pages');
+  container.innerHTML = '';
+  const total = S.records.length;
+  for (let i=0; i<total; i++) {
+    container.appendChild(buildFormPage(S.records[i], i+1));
+    if (i%15===0 || i===total-1) {
+      btn.innerHTML = '<span class="spinner"></span>เตรียมหน้า '+(i+1)+'/'+total;
+      await sleep(0);
+    }
+  }
+  btn.innerHTML = old; btn.disabled = false;
+  // Give layout a tick to settle, then open the print dialog.
+  await sleep(120);
+  window.print();
+}
+
 // ─── PHASE NAV ────────────────────────────────────────────────────────────────
 function goPhase(n) {
   document.querySelectorAll('.phase').forEach(p=>p.classList.remove('active'));
@@ -636,6 +726,551 @@ function resetAll() {
   goPhase(1);
 }
 
+// ─── BUILD ONE FORM PAGE (HTML replica for PDF) ───
+function buildFormPage(rec, num) {
+  const div = document.createElement('div');
+  div.className = 'form-page';
+
+  // Helper: escape HTML
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  div.innerHTML = `
+<!-- ════════════ ROW 1: tiny spacer ════════════ -->
+<table class="ft" style="margin-bottom:0">
+<colgroup>
+  <!-- Approximate column widths matching Excel: A~B~C...AK -->
+  <!-- Using % of 200mm usable width -->
+  <col style="width:2mm">   <!-- A: 1.27ch -->
+  <col style="width:2mm">   <!-- B -->
+  <col style="width:9mm">   <!-- C: 5ch -->
+  <col style="width:13mm">  <!-- D: 7.18ch -->
+  <col style="width:6mm">   <!-- E: 3.27ch -->
+  <col style="width:10mm">  <!-- F: 5.54ch -->
+  <col style="width:9mm">   <!-- G: 5ch -->
+  <col style="width:12mm">  <!-- H: 6.82ch -->
+  <col style="width:9mm">   <!-- I: 5ch -->
+  <col style="width:7mm">   <!-- J -->
+  <col style="width:7mm">   <!-- K -->
+  <col style="width:7mm">   <!-- L -->
+  <col style="width:7mm">   <!-- M: 7.27ch -->
+  <col style="width:8mm">   <!-- N: 7.45ch -->
+  <col style="width:6mm">   <!-- O: 4.45ch -->
+  <col style="width:7mm">   <!-- P: 5.73ch -->
+  <col style="width:3mm">   <!-- Q: 2ch -->
+  <col style="width:11mm">  <!-- R: 8.54ch -->
+  <col style="width:11mm">  <!-- S: 8.18ch -->
+  <col style="width:7mm">   <!-- T -->
+  <col style="width:7mm">   <!-- U -->
+  <col style="width:5mm">   <!-- V -->
+  <col style="width:5mm">   <!-- W -->
+  <col style="width:5mm">   <!-- X -->
+  <col style="width:5mm">   <!-- Y: 9.18ch -->
+  <col style="width:2mm">   <!-- Z: 1.27ch -->
+  <col style="width:7mm">   <!-- AA -->
+  <col style="width:7mm">   <!-- AB: 6ch -->
+  <col style="width:7mm">   <!-- AC: 5.91ch -->
+  <col style="width:7mm">   <!-- AD: 6ch -->
+  <col style="width:7mm">   <!-- AE -->
+</colgroup>
+
+<!-- ROW 2: Format-1 header + Retention -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="12" class="tl fs8" style="padding:0 1mm">Format - 1 ( OM: C11-42-BD-001 )</td>
+  <td colspan="11"></td>
+  <td colspan="3" class="tc fs8 b-all" style="padding:0 1mm">Retention</td>
+  <td colspan="3" class="tc fs8 b-all" style="padding:0 1mm">1 Year</td>
+</tr>
+
+<!-- ROW 3: tiny gap -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 4-5: Title + Work type + PM ORDER -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="10" rowspan="2" class="tc bold b-all" style="font-size:16pt;padding:1mm">ใบบันทึกสรุปการทำงาน</td>
+  <td colspan="2" class="tc b-all" style="height:5mm"></td><!-- spacer T4:U4 -->
+  <td colspan="4" class="tc b-all"></td><!-- P4 circle -->
+  <td class="circle-o tc" style="font-size:12pt">⃝</td>
+  <td colspan="3" class="tl bold fs9">Repair work</td>
+  <td colspan="2" class="tc bold fs9 b-all" style="padding:0 1mm">PM ORDER #</td>
+  <td colspan="3" class="tc fs14 b-all" style="font-weight:normal">${esc(rec.order)}</td>
+  <td colspan="5"></td>
+</tr>
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <!-- col F4:M5 merged above -->
+  <td colspan="2"></td><!-- T,U -->
+  <td class="bullet-filled tc" style="font-size:14pt">●</td><!-- P5 filled -->
+  <td colspan="3" class="tl bold fs9">Maintenance  work</td>
+  <td colspan="5"></td>
+  <td colspan="5"></td>
+</tr>
+
+<!-- ROW 6: Modify work -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td><td colspan="10"></td>
+  <td colspan="2"></td><!-- T,U -->
+  <td class="circle-o tc" style="font-size:12pt">⃝</td><!-- P6 -->
+  <td colspan="3" class="tl bold fs9">Modify  work</td>
+  <td colspan="11"></td>
+</tr>
+
+<!-- ROW 7: Type/Cause header -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td><td colspan="17"></td>
+  <td colspan="2" class="tc bold fs9 b-all">Type</td><!-- T7:U7 -->
+  <td class="tc bold fs9 b-t b-b">A</td>
+  <td class="tc bold fs9 b-t b-b">B</td>
+  <td class="tc bold fs9 b-t b-b b-r">C</td>
+  <td colspan="6"></td>
+</tr>
+
+<!-- ROW 8: สายการผลิต + แผนก + Cause -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td class="tl bold fs11 b-t b-b b-l" style="padding:0 1mm">สายการผลิต :</td>
+  <td colspan="3" class="tl bold fs11 b-t b-b"></td>
+  <td colspan="5" class="tc fs14 b-all" style="font-weight:normal">${esc(rec.line)}</td><!-- F8:J8 -->
+  <td class="tr bold fs11 b-t b-b">แผนก :</td><!-- M8 -->
+  <td colspan="5" class="tc fs14 b-all" style="font-weight:normal">${esc(rec.dept)}</td><!-- N8:R8 -->
+  <td class="tr bold fs11 b-t b-b" style="padding:0 0.5mm"></td>
+  <td colspan="2" class="tc bold fs9 b-all">Cause</td><!-- T8:U8 -->
+  <td class="tc bold fs9 b-t b-b">X</td>
+  <td class="tc bold fs9 b-t b-b">Y</td>
+  <td class="tc bold fs9 b-t b-b b-r">Z</td>
+  <td colspan="5"></td>
+</tr>
+
+<!-- ROW 9: ชื่อเครื่องจักร -->
+<tr style="height:5.8mm">
+  <td colspan="2"></td>
+  <td colspan="3" class="tl bold fs11 b-t b-b b-l" style="padding:0 1mm">ชื่อเครื่องจักรหรืองาน</td>
+  <td colspan="2"></td>
+  <td colspan="14" class="tc fs14 b-all" style="font-weight:normal">${esc(rec.desc)}</td><!-- G9:T9 -->
+  <td colspan="2" class="tr bold fs11 b-t b-b" style="padding:0 1mm">หมายเลข</td><!-- V9 -->
+  <td colspan="2" class="tc fs14 b-all" style="font-weight:normal">${esc(rec.equip)}</td><!-- W9:X9 -->
+  <td colspan="5"></td>
+</tr>
+
+<!-- ROW 10: วันที่รับแจ้ง -->
+<tr style="height:5.8mm">
+  <td colspan="2"></td>
+  <td colspan="2" class="tl bold fs11 b-l b-t b-b" style="padding:0 1mm">วันที่รับแจ้ง</td>
+  <td colspan="3" class="tc fs13 b-all" style="font-weight:normal">${esc(rec.date)}</td><!-- E10:G10 -->
+  <td class="tc bold fs11 b-all" style="padding:0 1mm">เวลา</td>
+  <td colspan="3" class="b-all"></td><!-- I10:K10 -->
+  <td colspan="2" class="tr bold fs11 b-all" style="padding:0 1mm">ชื่อผู้แจ้ง</td><!-- M10 -->
+  <td colspan="6" class="b-all"></td><!-- N10:S10 -->
+  <td colspan="4" class="tr bold fs11 b-all" style="padding:0 1mm">ชื่อผู้รับแจ้ง</td><!-- U10 (V10:X10 merge) -->
+  <td colspan="5" class="b-all"></td>
+</tr>
+
+<!-- ROW 11: แจ้งโดย -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="3" class="tl bold fs11 b-b b-l" style="padding:0 1mm">แจ้งโดย :</td>
+  <td class="circle-o tc b-b" style="font-size:10pt">⃝</td>
+  <td colspan="3" class="tl fs11 b-b">ใบแจ้งซ่อม</td>
+  <td class="circle-o tc b-b" style="font-size:10pt">⃝</td>
+  <td colspan="3" class="tl fs11 b-b">โทรศัพท์</td>
+  <td class="circle-o tc b-b" style="font-size:10pt">⃝</td>
+  <td colspan="4" class="tl fs11 b-b">บอกด้วยวาจา</td>
+  <td class="circle-o tc b-b" style="font-size:10pt"> ⃝</td>
+  <td class="tl fs11 b-b b-r" colspan="10">อื่นๆ</td>
+</tr>
+
+<!-- ROW 12: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 13: Safety headers -->
+<tr style="height:7.5mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl bold fs11 b-all" style="padding:0 1mm;background:#f0f0f0">1.การตรวจสอบความปลอดภัยก่อนเริ่มงาน</td>
+  <td class="tc fs9 b-t b-b" style="padding:0 0.5mm"> OK</td>
+  <td colspan="2" class="tc fs9 b-all">ไม่เกี่ยวข้อง</td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl bold fs11 b-all" style="padding:0 1mm;background:#f0f0f0">2.การตรวจสอบความปลอดภัยหลังซ่อมงาน</td>
+  <td colspan="2" class="tc fs9 b-all"> OK</td>
+  <td colspan="3" class="tc fs9 b-all">ไม่เกี่ยวข้อง</td>
+</tr>
+
+<!-- ROW 14: Safety 1.1 + 2.1 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l" style="padding:0 1mm">1.1 แจ้งให้ F/M ,S/V ของผู้ดูแลเครื่องรับทราบก่อนทำการซ่อม</td>
+  <td class="tc cbig b-all">□</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl fs11" style="padding:0 1mm">2.1 จัดเก็บอุปกรณ์ เครื่องมือออกจากเครื่องจักร</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="3" class="tc cbig b-all">□</td>
+</tr>
+
+<!-- ROW 15: Safety 1.2 + 2.2 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l blue-text" style="padding:0 1mm">1.2 ดำเนินการประเมินความเสี่ยงก่อนเริ่มงาน โดยใช้แบบฟอร์ม</td>
+  <td class="tc cbig b-l b-r">□</td>
+  <td colspan="2" class="tc cbig b-l b-r"></td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl fs11" style="padding:0 1mm">2.2 ทำการตรวจเช็คความเรียบร้อยก่อนจ่ายพลังงาน</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="3" class="tc cbig b-all">□</td>
+</tr>
+
+<!-- ROW 16: Safety 1.2 cont + 2.3 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l blue-text" style="padding:0 1mm 0 3mm">[Format-5 (TS0-16-30) : แบบประเมินความเสี่ยงก่อนเริ่มงาน</td>
+  <td class="tc cbig b-l b-r"></td>
+  <td colspan="2" class="tc cbig b-l b-r"></td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl fs11" style="padding:0 1mm">2.3 ตรวจสอบผลการทำงานของเครื่องจักร</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="3" class="tc cbig b-all">□</td>
+</tr>
+
+<!-- ROW 17: Safety 1.2 cont2 + 2.4 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l blue-text" style="padding:0 1mm 0 3mm">(สำหรับงานที่ไม่ได้ทำเป็นประจำ)]</td>
+  <td class="tc cbig b-l b-r"></td>
+  <td colspan="2" class="tc cbig b-l b-r"></td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl fs11" style="padding:0 1mm">2.4 แจ้งให้ F/M, S/V เจ้าของพื้นที่ให้ทราบหลังทำงานเสร็จ</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="3" class="tc cbig b-all">□</td>
+</tr>
+
+<!-- ROW 18: Safety 1.3 + 2.5 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l" style="padding:0 1mm">1.3 ลูกกุญแจชุดLock out ต้องเก็บอยู่กับตัวช่างเทคนิคเท่านั้น</td>
+  <td class="tc cbig b-l b-r">□</td>
+  <td colspan="2" class="tc cbig b-l b-r"></td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl fs11" style="padding:0 1mm">2.5 ตรวจสอบการทำงานของ Safety Guard,<br>&nbsp;&nbsp;&nbsp;Sensor Light Guard</td>
+  <td colspan="2" class="tc cbig b-all" style="vertical-align:middle">□</td>
+  <td colspan="3" class="tc cbig b-all" style="vertical-align:middle">□</td>
+</tr>
+
+<!-- ROW 19: Safety 1.4 -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l" style="padding:0 1mm">1.4 ไม่อนุญาตให้ใช้อ๊อกซิเจน สำหรับการตรวจสอบรอยรั่ว</td>
+  <td class="tc cbig b-l b-r">□</td>
+  <td colspan="2" class="tc cbig b-l b-r">□</td>
+  <td colspan="13"></td>
+</tr>
+
+<!-- ROW 20: spacer -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="b-l"></td>
+  <td class="b-l b-r"></td>
+  <td colspan="2" class="b-l b-r"></td>
+  <td colspan="13"></td>
+</tr>
+
+<!-- ROW 21: Safety 1.5 + ตรวจสอบโดย -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l b-b" style="padding:0 1mm">1.5 ระมัดระวังจุดเสี่ยง ได้แก่ จุดหมุน จุดที่เคลื่อนที่ได้</td>
+  <td class="tc cbig b-all">□</td>
+  <td colspan="2" class="tc cbig b-all">□</td>
+  <td colspan="2"></td>
+  <td colspan="9" class="tl bold fs11" style="padding:0 1mm">ตรวจสอบ และแจ้งให้ผู้ปฎิบัติงานทราบโดย</td>
+  <td colspan="5"></td>
+</tr>
+
+<!-- ROW 22-23: Safety 1.6 + Sr.Eng note -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l b-b blue-text" style="padding:0 1mm">1.6 การทำงานเกี่ยวกับเครน มีการสื่อสารเพื่อระมัดระวัง</td>
+  <td class="tc cbig b-l b-r" rowspan="2">□</td>
+  <td colspan="2" class="b-l b-r" rowspan="2"></td>
+  <td colspan="2"></td>
+  <td colspan="14" class="tr fs11" style="padding:0 1mm">(Sr.Eng. / Eng. / Sr.Tech / Tech)</td>
+</tr>
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="11" class="tl fs11 b-l b-b blue-text" style="padding:0 1mm">      การแกว่งของวัตถุ, ชิ้นงาน ขณะทำงาน</td>
+  <!-- merged cell above -->
+  <td colspan="2"></td>
+  <td colspan="14"></td>
+</tr>
+
+<!-- ROW 24-25: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 26: รายละเอียดของการเสียหาย -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="10" class="tl bold fs11 b-all" style="padding:0 1mm;background:#f0f0f0">รายละเอียดของการเสียหาย , อาการ หรือรายละเอียดของงาน</td>
+  <td colspan="2" class="tl fs9 b-t b-b" style="padding:0 1mm">Maintenance work</td>
+  <td colspan="17" class="b-t b-b b-r"></td>
+</tr>
+
+<!-- ROW 27-29: Work detail area -->
+<tr style="height:5.3mm"><td colspan="2"></td><td colspan="29" class="b-l b-r"></td></tr>
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+<tr style="height:5.3mm"><td colspan="2"></td><td colspan="29" class="b-l b-b b-r"></td></tr>
+
+<!-- ROW 30: สาเหตุ header -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="29" class="tl bold fs11 b-all" style="padding:0 1mm;background:#f0f0f0">สาเหตุที่ทำให้เครื่องเกิดการเสียหาย (ถ้าเป็นงาน Maintenance work ข้ามไปยังช่องนี้)</td>
+</tr>
+
+<!-- ROW 31: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 32-33: Cause checkboxes -->
+<tr style="height:4.75mm">
+  <td colspan="2"></td>
+  <td class="tl bold fs9 b-l" style="padding:0 1mm"></td>
+  <td class="tl bold fs9" style="padding:0 0.5mm">พนักงาน</td>
+  <td></td>
+  <td class="tc cbig2 b-l b-r">□</td>
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">ทำงานผิดวิธี</td>
+  <td colspan="3"></td>
+  <td class="tl bold fs9" style="padding:0 0.5mm">เครื่องจักร</td>
+  <td class="tc cbig2 b-all">□</td>
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">เสื่อมสภาพ</td>
+  <td colspan="5"></td>
+  <td class="tl bold fs9" style="padding:0 0.5mm">ช่างซ่อม</td>
+  <td class="tc cbig2 b-all">□</td><!-- U32 -->
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">ซ่อมผิดขั้นตอน</td>
+  <td colspan="4"></td>
+</tr>
+<tr style="height:4.75mm">
+  <td colspan="2"></td>
+  <td class="b-l" colspan="2"></td>
+  <td></td>
+  <td class="tc cbig2 b-l b-r">□</td>
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">ปรับแต่งเครื่องผิด</td>
+  <td colspan="3"></td>
+  <td class=""></td>
+  <td class="tc cbig2 b-all">□</td>
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">ทำงานผิดขั้นตอน</td>
+  <td colspan="5"></td>
+  <td></td>
+  <td class="tc cbig2 b-all">□</td><!-- U33 -->
+  <td colspan="2" class="tl fs11" style="padding:0 1mm">ปรับแต่งหลังการซ่อม</td>
+  <td colspan="3"></td>
+</tr>
+
+<!-- ROW 34: รายละเอียดสาเหตุ -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td class="b-l b-b b-t"></td>
+  <td colspan="3" class="tl bold fs11 b-b b-t" style="padding:0 1mm">รายละเอียดสาเหตุที่เครื่องชำรุด</td>
+  <td colspan="25" class="b-b b-t b-r"></td>
+</tr>
+
+<!-- ROW 35: detail area -->
+<tr style="height:5.3mm"><td colspan="2"></td><td colspan="29" class="b-l b-r"></td></tr>
+
+<!-- ROW 36: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 37: ซ่อมโดย types -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td class="circle-o tc" style="font-size:11pt">      ⃝</td>
+  <td colspan="2"></td>
+  <td colspan="5" class="tl bold fs11" style="padding:0 1mm">ซ่อมโดยหยุดการผลิต (A)</td>
+  <td colspan="2" class="circle-o tl" style="font-size:11pt;padding-left:1mm">⃝</td>
+  <td colspan="6" class="tl bold fs11" style="padding:0 1mm">ซ่อมโดยไม่หยุดการผลิต (B)</td>
+  <td colspan="2" class="circle-o tc" style="font-size:11pt">   ⃝</td>
+  <td colspan="5" class="tl bold fs11" style="padding:0 1mm">ซ่อมขณะไม่มีการผลิต  (C)</td>
+  <td colspan="5"></td>
+</tr>
+
+<!-- ROW 38: สาเหตุ cause of problem -->
+<tr style="height:5.8mm">
+  <td colspan="2"></td>
+  <td colspan="29" class="tl fs9 b-all" style="padding:0 1mm">สาเหตุที่ทำให้เกิดปัญหาและความเสียหาย (Cause of problem)  :  X = เกิดจาก Operator ไม่มีการตรวจเช็คสภาพก่อนทำงาน,  Y = เกิดจาก Operator ทำงานผิดพลาด,  Z = เกิดขึ้นเองหรืออื่นๆ</td>
+</tr>
+
+<!-- ROW 39: เวลาทำงาน -->
+<tr style="height:5.8mm">
+  <td colspan="2"></td>
+  <td colspan="2" class="tl bold fs11 b-all" style="padding:0 1mm">เวลาทำงาน</td>
+  <td colspan="6" class="tl fs11 b-all" style="padding:0 1mm">เริ่มวันที่  ______/______/_______</td>
+  <td colspan="4" class="tl fs11 b-all" style="padding:0 1mm">เวลา ____________</td>
+  <td colspan="5" class="tl fs11 b-all" style="padding:0 1mm">เสร็จวันที่ ______/______/_______</td>
+  <td colspan="4" class="tl fs11 b-all" style="padding:0 1mm">เวลา____________</td>
+  <td colspan="6" class="tl fs11 b-all" style="padding:0 1mm">รวมเวลา _________ นาที</td>
+  <td colspan="2"></td>
+</tr>
+
+<!-- ROW 40: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 41: Work detail table header (yellow) -->
+<tr style="height:5.1mm">
+  <td colspan="2" class="tc bold fs9 b-all fy" style="padding:0 1mm">No.</td>
+  <td colspan="18" class="tc bold fs11 b-all fy" style="padding:0 1mm">รายละเอียดการตรวจซ่อมหรือปฏิบัติ</td>
+  <td colspan="7" class="tc bold fs11 b-all fy" style="padding:0 1mm">ชื่อผู้ปฏิบัติ</td>
+  <td colspan="4" class="tc bold fs11 b-all fy" style="padding:0 1mm">หมายเหตุ</td>
+</tr>
+
+<!-- ROW 42-45: Work detail rows -->
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="18" class="b-all"></td><td colspan="7" class="b-all"></td><td colspan="4" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="18" class="b-all"></td><td colspan="7" class="b-all"></td><td colspan="4" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="18" class="b-all"></td><td colspan="7" class="b-all"></td><td colspan="4" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="18" class="b-all"></td><td colspan="7" class="b-all"></td><td colspan="4" class="b-all"></td></tr>
+
+<!-- ROW 46: อะไหล่ header (yellow) -->
+<tr style="height:5.1mm">
+  <td colspan="31" class="tc bold fs11 b-all fy" style="padding:0 1mm">อะไหล่ที่เปลี่ยน หรือค่าใช้จ่ายที่เกิดขึ้น</td>
+</tr>
+
+<!-- ROW 47: Parts sub-header -->
+<tr style="height:5mm">
+  <td colspan="2" class="tc fs9 b-all" style="padding:0 1mm">No.</td>
+  <td colspan="11" class="tc fs11 b-all" style="padding:0 1mm">ชื่อรุ่น</td>
+  <td colspan="4" class="tc fs11 b-all" style="padding:0 1mm">Part code</td>
+  <td colspan="2" class="tc fs11 b-all" style="padding:0 1mm">จำนวน</td>
+  <td colspan="5" class="tc fs11 b-all" style="padding:0 1mm">ราคา/หน่วย</td>
+  <td colspan="7" class="tc fs11 b-all" style="padding:0 1mm">รวมราคา</td>
+</tr>
+
+<!-- ROW 48-51: Parts rows -->
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="11" class="b-all"></td><td colspan="4" class="b-all"></td><td colspan="2" class="b-all"></td><td colspan="5" class="b-all"></td><td colspan="7" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="11" class="b-all"></td><td colspan="4" class="b-all"></td><td colspan="2" class="b-all"></td><td colspan="5" class="b-all"></td><td colspan="7" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="11" class="b-all"></td><td colspan="4" class="b-all"></td><td colspan="2" class="b-all"></td><td colspan="5" class="b-all"></td><td colspan="7" class="b-all"></td></tr>
+<tr style="height:5mm"><td colspan="2" class="b-all"></td><td colspan="11" class="b-all"></td><td colspan="4" class="b-all"></td><td colspan="2" class="b-all"></td><td colspan="5" class="b-all"></td><td colspan="7" class="b-all"></td></tr>
+
+<!-- ROW 52: วิธีป้องกัน -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="29" class="tl bold fs9 b-t" style="padding:0 1mm">วิธีป้องกัน และข้อเสนอแนะ</td>
+</tr>
+
+<!-- ROW 53: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 54: Signatures -->
+<tr style="height:6.6mm">
+  <td colspan="2"></td>
+  <td colspan="2" class="tr bold fs11" style="padding:0 1mm">รับทราบโดย</td>
+  <td colspan="4" class="b-b"></td><!-- E54:H54 -->
+  <td colspan="3" class="tc bold fs9" style="padding:0 1mm">(Sr,Eng. / Mgr.)</td><!-- I54:K54 -->
+  <td class="tr bold fs11" style="padding:0 1mm">เช็คโดย</td><!-- L54 -->
+  <td class="b-b"></td>
+  <td class="b-b"></td><!-- M54 -->
+  <td colspan="6" class="tc bold fs9" style="padding:0 1mm">(Eng. / Sr.Tech)</td><!-- R54:S54 -->
+  <td colspan="2" class="tr bold fs11" style="padding:0 1mm">รายงานโดย</td><!-- T54:U54 -->
+  <td colspan="3" class="b-b"></td><!-- V54:X54 -->
+  <td colspan="2" class="tl bold fs9" style="padding:0 1mm">(Tech.)</td><!-- Y54:Z54 -->
+  <td colspan="4"></td>
+</tr>
+
+<!-- ROW 55: Date lines -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="2"></td>
+  <td colspan="5" class="tl fs9" style="padding:0 1mm">วันที่ ______/_______/_______</td>
+  <td colspan="4"></td>
+  <td colspan="3" class="tl fs9" style="padding:0 1mm">วันที่ ______/_______/_______</td>
+  <td colspan="5"></td>
+  <td colspan="3"></td>
+  <td colspan="6" class="tl fs9" style="padding:0 1mm">วันที่ ______/_______/_______</td>
+  <td></td>
+</tr>
+
+<!-- ROW 56: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 57: รับทราบโดยเจ้าของงาน (yellow) -->
+<tr style="height:5.1mm">
+  <td colspan="31" class="tc bold fs11 b-all fy" style="padding:0 1mm">รับทราบโดยเจ้าของงาน</td>
+</tr>
+
+<!-- ROW 58: รับทราบโดย O/P -->
+<tr style="height:5.3mm">
+  <td colspan="2"></td>
+  <td colspan="3" class="tc bold fs9 b-all" style="padding:0 0.5mm">รับทราบโดย :</td>
+  <td colspan="11" class="b-all"></td><!-- F58:P58 -->
+  <td colspan="2"></td>
+  <td colspan="9" class="tl bold fs9" style="padding:0 1mm">(O/P หรือ L/D หรือ F/M หรือ S/V)</td>
+  <td colspan="6" class="tl bold fs9" style="padding:0 1mm">วันที่_______/_______/________</td>
+</tr>
+
+<!-- ROW 59: spacer -->
+<tr style="height:1.5mm"><td colspan="31"></td></tr>
+
+<!-- ROW 60-62: Customer satisfaction -->
+<tr style="height:4.75mm">
+  <td colspan="2"></td>
+  <td colspan="6" class="tr fs12 b-t b-l" style="padding:0 1mm">กรุณาใส่เครื่องหมาย</td>
+  <td class="tc b-t" style="font-family:'Wingdings 2','Wingdings',serif;font-size:18pt;font-weight:bold;line-height:1">✔</td><!-- Wingdings checkmark -->
+  <td colspan="8" class="tl fs12 b-t" style="padding:0 1mm">ลงในช่องที่ท่านเลือก</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">1</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">2</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">3</td>
+  <td class="tc bold fs9 b-all fy">4</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">5</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">6</td>
+  <td colspan="2" class="tc bold fs9 b-all fy">7</td>
+</tr>
+<tr style="height:3.97mm">
+  <td colspan="2"></td>
+  <td colspan="15" class="b-l"></td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">ไม่เห็นด้วย</td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">ไม่เห็นด้วย</td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">ไม่เห็นด้วย</td>
+  <td class="tc fs8 b-l b-r fy">เฉยเฉย</td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">เห็นด้วย</td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">เห็นด้วย</td>
+  <td colspan="2" class="tc fs8 b-l b-r fy">เห็นด้วย</td>
+</tr>
+<tr style="height:3.97mm">
+  <td colspan="2"></td>
+  <td colspan="15" class="b-b b-l"></td>
+  <td colspan="2" class="tc fs8 b-all fy">อย่างยิ่ง</td>
+  <td colspan="2" class="tc fs8 b-all fy"></td>
+  <td colspan="2" class="tc fs8 b-all fy">บางส่วน</td>
+  <td class="tc fs8 b-all fy"></td>
+  <td colspan="2" class="tc fs8 b-all fy">บางส่วน</td>
+  <td colspan="2" class="tc fs8 b-all fy"></td>
+  <td colspan="2" class="tc fs8 b-all fy">อย่างยิ่ง</td>
+</tr>
+
+<!-- ROW 63-66: Survey questions -->
+<tr style="height:4.75mm"><td colspan="2"></td><td class="b-l b-b b-t"></td><td colspan="14" class="tl fs11 b-b b-t" style="padding:0 1mm">1.ท่านพึงพอใจกับคุณภาพที่ดีของงานบริการโดยช่างผู้ให้บริการกับท่าน</td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td></tr>
+<tr style="height:4.75mm"><td colspan="2"></td><td class="b-l b-b"></td><td colspan="14" class="tl fs11 b-b" style="padding:0 1mm">2.ท่านพึงพอใจกับการส่งมอบงานที่ดีโดยช่างผู้ให้บริการกับท่าน</td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td></tr>
+<tr style="height:4.75mm"><td colspan="2"></td><td class="b-l b-b"></td><td colspan="14" class="tl fs11 b-b" style="padding:0 1mm">3.ท่านพึงพอใจในความสัมพันธ์ที่ดีกับช่างผู้ให้บริการกับท่าน</td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td></tr>
+<tr style="height:4.75mm"><td colspan="2"></td><td class="b-l b-b"></td><td colspan="14" class="tl fs11 b-b" style="padding:0 1mm">4.ท่านพึงพอใจกับการจัดการ ,การแก้ปัญหาที่ดีที่ได้รับจากช่างผู้ให้บริการกับท่าน</td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td><td colspan="2" class="b-all fy"></td></tr>
+
+<!-- ROW 67: ข้อเสนอแนะ -->
+<tr style="height:5.1mm">
+  <td colspan="2"></td>
+  <td colspan="29" class="tl fs11 b-b" style="padding:0 1mm">ข้อเสนอแนะ :</td>
+</tr>
+
+<!-- ROW 68: spacer -->
+<tr style="height:4.95mm"><td colspan="31" class="b-b" style="margin-left:2mm"></td></tr>
+
+<!-- ROW 69: spacer -->
+<tr style="height:5.3mm"><td colspan="31"></td></tr>
+
+<!-- ROW 70: Revision footer -->
+<tr style="height:5.8mm">
+  <td colspan="2"></td>
+  <td colspan="29" class="tl fs9 blue-text" style="padding:0 1mm">Revision No.11 : 04/11/2024</td>
+</tr>
+
+</table>
+`;
+
+  return div;
+}
+
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
@@ -650,5 +1285,6 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
   if(f1){ await loadFile(new File([base64ToBuf(f1.b64)],f1.name), true).catch(()=>{}); }
 })();
 </script>
+<div id="form-pages"></div>
 </body>
 </html>
