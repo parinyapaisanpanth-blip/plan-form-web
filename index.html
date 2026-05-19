@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Maintenance → ใบบันทึกสรุปการทำงาน (Excel)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="lib/xlsx.full.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="lib/template.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c14;--surface:#111420;--surface2:#181c2a;--surface3:#1e2336;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#cdd3ef;--muted:#5a6080;--dim:#2e334d;
+  --blue:#4f8ef7;--blue-dim:rgba(79,142,247,0.1);--blue-glow:rgba(79,142,247,0.2);
+  --green:#2dd4a0;--green-dim:rgba(45,212,160,0.1);
+  --amber:#f5a623;--amber-dim:rgba(245,166,35,0.1);
+  --red:#f05f5f;--red-dim:rgba(240,95,95,0.1);
+  --r:8px;--rl:12px;
+  --font:'Noto Sans Thai',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.5}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;gap:12px}
+.logo{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;letter-spacing:-0.02em;white-space:nowrap}
+.logo-mark{width:28px;height:28px;background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step-nav{display:flex;align-items:center;gap:0;flex:1;justify-content:center}
+.snav{display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:11px;color:var(--dim);transition:color 0.2s}
+.snav.active{color:var(--blue)}.snav.done{color:var(--green)}
+.snav-num{width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.snav.done .snav-num{background:var(--green);border-color:var(--green);color:#0a0c14}
+.snav.active .snav-num{background:var(--blue);border-color:var(--blue);color:#fff}
+.step-sep{width:18px;height:1px;background:var(--border)}
+main{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 53px)}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.aside-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:0 8px;margin-bottom:2px;margin-top:12px}
+.aside-title:first-child{margin-top:0}
+.aside-btn{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;font-size:12px;font-family:var(--font);color:var(--muted);background:transparent;border:none;cursor:pointer;width:100%;text-align:left;transition:all 0.15s}
+.aside-btn:hover{background:var(--surface2);color:var(--text)}
+.aside-btn.active{background:var(--blue-dim);color:var(--blue)}
+.aside-stats{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;margin-bottom:4px;font-size:11px}
+.stat-row{display:flex;justify-content:space-between;margin-bottom:2px}
+.stat-row:last-child{margin-bottom:0}
+.lbl{color:var(--muted)}.val{color:var(--text);font-weight:600;font-family:var(--mono)}
+.val.green{color:var(--green)}.val.amber{color:var(--amber)}
+.aside-file-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;margin-bottom:4px}
+.aside-file-name{font-size:11px;font-family:var(--mono);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aside-file-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.aside-file-acts{display:flex;gap:5px;margin-top:6px}
+.aside-file-act{flex:1;padding:3px;border-radius:5px;font-size:10px;font-family:var(--font);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s}
+.aside-file-act:hover{background:var(--surface3);color:var(--text)}
+.aside-file-act.del:hover{background:var(--red-dim);color:var(--red);border-color:var(--red)}
+.aside-empty{font-size:11px;color:var(--dim);padding:5px 10px;font-style:italic}
+.content{padding:28px 32px;overflow-y:auto;max-height:calc(100vh - 53px)}
+.phase{display:none;animation:fadeUp 0.2s ease}
+.phase.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.shead{margin-bottom:20px}
+.shead h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:3px}
+.shead p{font-size:12px;color:var(--muted)}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.ucard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;transition:border-color 0.2s}
+.ucard.done{border-color:rgba(45,212,160,0.3)}
+.ucard-lbl{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:3px}
+.badge{padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700;letter-spacing:0.04em}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-glow)}
+.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,212,160,0.3)}
+.ucard h3{font-size:14px;font-weight:600;margin-bottom:2px}
+.ucard p{font-size:11px;color:var(--muted);margin-bottom:10px}
+.dropzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px 12px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--surface2);position:relative}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dropzone:hover,.dropzone.over{border-color:var(--blue);background:var(--blue-dim)}
+.dropzone.ok{border-style:solid;border-color:var(--green);background:var(--green-dim)}
+.dz-ic{font-size:20px;margin-bottom:4px;display:block}
+.dz-lb{font-size:12px;font-weight:500;margin-bottom:2px}
+.dz-hint{font-size:10px;color:var(--muted)}
+.dz-fname{font-size:10px;font-family:var(--mono);color:var(--green);margin-top:4px;word-break:break-all}
+.dz-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.info-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:16px}
+.info-box-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--blue);margin-bottom:9px}
+.mapping-table{width:100%;border-collapse:collapse;font-size:11px}
+.mapping-table th{padding:6px 10px;text-align:left;font-size:10px;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);font-weight:600}
+.mapping-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.mapping-table tr:last-child td{border-bottom:none}
+.cell-tag{font-family:var(--mono);padding:1px 5px;border-radius:3px;font-size:10px;background:var(--blue-dim);color:var(--blue)}
+.preview-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--rl);margin-bottom:16px;max-height:460px}
+.ptbl{width:100%;border-collapse:collapse;font-size:11px}
+.ptbl th{padding:8px 11px;text-align:left;font-size:10px;font-family:var(--mono);color:var(--blue);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;font-weight:600}
+.ptbl td{padding:7px 11px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl tr:hover td{background:rgba(255,255,255,0.02)}
+.pill{display:inline-block;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:600}
+.pill-green{background:var(--green-dim);color:var(--green)}
+.pill-amber{background:var(--amber-dim);color:var(--amber)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:500;font-family:var(--font);cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all 0.15s}
+.btn:hover{background:var(--surface3)}.btn:active{transform:scale(0.98)}.btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}.btn-primary:hover{filter:brightness(1.12)}
+.btn-success{background:var(--green);border-color:var(--green);color:#0a0c14;font-weight:700}.btn-success:hover{filter:brightness(1.1)}
+.btn-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.progress-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:14px}
+.progress-section h3{font-size:13px;font-weight:600;margin-bottom:12px}
+.prog-bar-wrap{margin-bottom:8px}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+.prog-bg{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width 0.3s ease;width:0%}
+.log-box{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:10px;font-family:var(--mono);color:var(--muted);max-height:180px;overflow-y:auto;line-height:1.9}
+.log-box .ok{color:var(--green)}.log-box .warn{color:var(--amber)}.log-box .err{color:var(--red)}
+.done-card{background:var(--surface);border:1px solid rgba(45,212,160,0.2);border-radius:var(--rl);padding:36px;text-align:center;margin-bottom:20px}
+.done-ic{font-size:38px;margin-bottom:10px;display:block}
+.done-card h2{font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px}
+.done-card .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.pbar-bg{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:22px}
+.pbar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width 0.4s ease}
+.stats-row{display:flex;justify-content:center;gap:32px;margin-bottom:22px}
+.stat-item .stat-v{font-size:26px;font-weight:700;color:var(--text)}
+.stat-item .stat-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:-2px;margin-right:3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-mark">📋</div>Plan → ใบบันทึกสรุปการทำงาน (Excel)</div>
+  <div class="step-nav">
+    <div class="snav active" id="sn1"><div class="snav-num">1</div><span>อัปโหลด</span></div>
+    <div class="step-sep"></div>
+    <div class="snav" id="sn2"><div class="snav-num">2</div><span>ตรวจสอบ</span></div>
+    <div class="step-sep"></div>
+    <div class="snav" id="sn3"><div class="snav-num">3</div><span>สร้าง Excel</span></div>
+    <div class="step-sep"></div>
+    <div class="snav" id="sn4"><div class="snav-num">4</div><span>ดาวน์โหลด</span></div>
+  </div>
+  <div style="width:110px"></div>
+</header>
+
+<main>
+<aside>
+  <div class="aside-title">เมนู</div>
+  <button class="aside-btn active" id="sb1" onclick="goPhase(1)"><span>📁</span> อัปโหลดไฟล์</button>
+  <button class="aside-btn" id="sb2" onclick="if(S.records.length)goPhase(2)"><span>🔍</span> ตรวจสอบข้อมูล</button>
+  <button class="aside-btn" onclick="resetAll()" style="color:var(--red);margin-top:6px"><span>🔄</span> เริ่มใหม่</button>
+
+  <div class="aside-title" style="margin-top:14px">สรุปข้อมูล</div>
+  <div id="aside-summary" class="aside-stats" style="display:none">
+    <div class="stat-row"><span class="lbl">ทั้งหมด</span><span class="val" id="sum-total">—</span></div>
+    <div class="stat-row"><span class="lbl">มีวงกลม ●</span><span class="val green" id="sum-oval">—</span></div>
+    <div class="stat-row"><span class="lbl">ไม่มีวงกลม</span><span class="val amber" id="sum-no-oval">—</span></div>
+    <div class="stat-row"><span class="lbl">เดือน/ปี</span><span class="val" id="sum-period">—</span></div>
+  </div>
+
+  <div class="aside-title" style="margin-top:auto">ไฟล์ที่บันทึกไว้</div>
+  <div id="saved-list"><div class="aside-empty">ยังไม่มีไฟล์</div></div>
+</aside>
+
+<div class="content">
+
+<!-- Phase 1: Upload -->
+<div class="phase active" id="phase1">
+  <div class="shead">
+    <h2>อัปโหลดไฟล์ Excel</h2>
+    <p>ไฟล์ที่ 1 = Plan Maintenance (แหล่งข้อมูล) · ไฟล์ที่ 2 = แบบฟอร์ม (ฝังในระบบแล้ว — ไม่ต้องอัปโหลด)</p>
+  </div>
+
+  <div class="upload-grid">
+    <div class="ucard" id="uc1">
+      <div class="ucard-lbl"><span class="badge badge-blue">ไฟล์ที่ 1</span>แหล่งข้อมูล</div>
+      <h3>Plan Maintenance</h3>
+      <p>ไฟล์ Excel แผนการซ่อมบำรุง — ดึงข้อมูลจาก Sheet "Plan" และวงกลมใน Drawing</p>
+      <div class="dropzone" id="dz1">
+        <input type="file" id="f1" accept=".xlsx,.xls">
+        <span class="dz-ic" id="dz1-ic">📁</span>
+        <div class="dz-lb" id="dz1-lb">คลิกหรือลากไฟล์</div>
+        <div class="dz-hint" id="dz1-hint">.xlsx .xls</div>
+        <div class="dz-fname" id="dz1-fname"></div>
+        <div class="dz-meta" id="dz1-meta"></div>
+      </div>
+    </div>
+    <div class="ucard" id="uc2" style="opacity:0.6">
+      <div class="ucard-lbl"><span class="badge badge-green">ฝังแล้ว</span>แบบฟอร์มต้นฉบับ</div>
+      <h3>ใบบันทึกสรุปการทำงาน</h3>
+      <p>ระบบใช้ไฟล์ Excel ต้นฉบับจริง (C11-42-BD-001 Format-1) ฝังไว้ — ผลลัพธ์เหมือนต้นฉบับ 100%</p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;color:var(--muted);font-size:11px">
+        ✅ เทมเพลต Excel ต้นฉบับฝังในระบบแล้ว<br>ไม่ต้องอัปโหลดไฟล์ที่ 2
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-box-head">🗺 การ Mapping ข้อมูล (เติมลงเทมเพลต Excel ต้นฉบับ)</div>
+    <table class="mapping-table">
+      <thead><tr><th>#</th><th>ดึงจาก Plan</th><th>วิธีดึง</th><th>ใส่ที่ช่อง</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>คอลัมน์ E (Description)</td><td>ตัดก่อนวงเล็บ ( )</td><td><span class="cell-tag">G9</span> ชื่อเครื่องจักร</td></tr>
+        <tr><td>2</td><td>คอลัมน์ C (Order)</td><td>เลข PM Order#</td><td><span class="cell-tag">V4</span> PM ORDER #</td></tr>
+        <tr><td>3</td><td>คอลัมน์ D (Equipment)</td><td>ตัวเลข</td><td><span class="cell-tag">W9</span> หมายเลข</td></tr>
+        <tr><td>4</td><td>หัวแถว (แผนก)</td><td>OSA / ISA / HEA / AM / SPA / PES / DE …</td><td><span class="cell-tag">N8</span> แผนก</td></tr>
+        <tr><td>5</td><td>หัวแถว (สายการผลิต)</td><td>ชื่อก่อน [ ]</td><td><span class="cell-tag">F8</span> สายการผลิต</td></tr>
+        <tr><td>6</td><td>วงกลม ● + เดือน/ปีจาก J3</td><td>ตำแหน่งจาก drawing XML</td><td><span class="cell-tag">E10</span> วันที่รับแจ้ง</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn12" onclick="analyzePlan()" disabled>วิเคราะห์และดูตัวอย่าง →</button>
+  </div>
+</div>
+
+<!-- Phase 2: Preview -->
+<div class="phase" id="phase2">
+  <div class="shead">
+    <h2>ตรวจสอบข้อมูลที่จะกรอก</h2>
+    <p id="preview-meta">—</p>
+  </div>
+  <div class="preview-wrap">
+    <table class="ptbl">
+      <thead>
+        <tr>
+          <th>#</th><th>แผนก (N8)</th><th>สายการผลิต (F8)</th>
+          <th>PM Order# (V4)</th><th>ชื่องาน (G9)</th>
+          <th>Equipment (W9)</th><th>วันที่ (E10)</th><th>วงกลม</th>
+        </tr>
+      </thead>
+      <tbody id="preview-body"></tbody>
+    </table>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="goPhase(1)">← กลับ</button>
+    <button class="btn btn-primary" onclick="goPhase(3);startGenerate()">🚀 สร้างไฟล์ Excel ทั้งหมด</button>
+  </div>
+</div>
+
+<!-- Phase 3: Generating -->
+<div class="phase" id="phase3">
+  <div class="shead"><h2>กำลังสร้างไฟล์ Excel</h2><p>กรุณารอสักครู่...</p></div>
+  <div class="progress-section">
+    <h3>ความคืบหน้า</h3>
+    <div class="prog-bar-wrap">
+      <div class="prog-label"><span id="prog-text">เตรียมข้อมูล...</span><span id="prog-pct">0%</span></div>
+      <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+</div>
+
+<!-- Phase 4: Done / Download -->
+<div class="phase" id="phase4">
+  <div class="done-card">
+    <span class="done-ic">✅</span>
+    <h2>สร้างไฟล์ Excel สำเร็จ!</h2>
+    <div class="sub" id="done-sub">พร้อมดาวน์โหลด</div>
+    <div class="pbar-bg"><div class="pbar" id="pbar" style="width:0%"></div></div>
+    <div class="stats-row" id="done-stats"></div>
+    <div class="btn-row" style="justify-content:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-success" id="dlBtn" onclick="downloadXlsx()" style="font-size:14px;padding:11px 22px">⬇️ ดาวน์โหลดไฟล์ Excel</button>
+      <button class="btn" onclick="resetAll()">🔄 เริ่มใหม่</button>
+    </div>
+  </div>
+  <div class="info-box">
+    <div class="info-box-head">💡 วิธีใช้ไฟล์ที่ได้</div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.8">
+      ไฟล์ Excel ที่ได้มี <strong style="color:var(--text)">1 ชีตต่อ 1 ใบบันทึก</strong> — เปิดด้วย Excel แล้วสั่งพิมพ์ได้ทันที (พื้นที่พิมพ์ A4 ตั้งค่าไว้แล้วในเทมเพลตต้นฉบับ)<br>
+      ฟอร์แมต เส้นขอบ ฟอนต์ และวงกลมในฟอร์ม <strong style="color:var(--text)">เหมือนต้นฉบับ 100%</strong> เพราะระบบเติมข้อมูลลงไฟล์ต้นฉบับจริง
+    </p>
+  </div>
+</div>
+
+</div><!-- .content -->
+</main>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const S = { planFile:null, planName:'', records:[], period:'', xlsxBlob:null };
+
+// ─── INDEXEDDB (remember last uploaded plan) ─────────────────────────────────
+const DB_N='pmxlsx',DB_S='files',DB_V=1; let db=null;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_N,DB_V);r.onupgradeneeded=e=>e.target.result.createObjectStore(DB_S,{keyPath:'id'});r.onsuccess=e=>{db=e.target.result;res()};r.onerror=()=>rej(r.error)});}
+function dbSet(id,data){return new Promise((res,rej)=>{const tx=db.transaction(DB_S,'readwrite');tx.objectStore(DB_S).put({id,...data});tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction(DB_S,'readonly');const req=tx.objectStore(DB_S).get(id);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});}
+function dbGetAll(){return new Promise((res,rej)=>{const tx=db.transaction(DB_S,'readonly');const req=tx.objectStore(DB_S).getAll();req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});}
+function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction(DB_S,'readwrite');tx.objectStore(DB_S).delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});}
+
+function bufToBase64(buf){let b='';const u=new Uint8Array(buf);const C=0x8000;for(let i=0;i<u.length;i+=C)b+=String.fromCharCode.apply(null,u.subarray(i,i+C));return btoa(b);}
+function base64ToBuf(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;}
+
+// ─── UPLOAD / DROP ────────────────────────────────────────────────────────────
+function setupDrop(dzId, fileId) {
+  const dz = document.getElementById(dzId);
+  document.getElementById(fileId).addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+}
+
+async function loadFile(file, fromDB) {
+  const buf = await file.arrayBuffer();
+  S.planFile = buf; S.planName = file.name;
+  document.getElementById('dz1-ic').textContent='✅';
+  document.getElementById('dz1-lb').textContent = fromDB ? 'โหลดสำเร็จ (จากที่บันทึกไว้)' : 'โหลดสำเร็จ';
+  document.getElementById('dz1-hint').textContent='';
+  document.getElementById('dz1-fname').textContent=file.name;
+  document.getElementById('dz1-meta').textContent=(buf.byteLength/1024).toFixed(0)+' KB';
+  document.getElementById('dz1').classList.add('ok');
+  document.getElementById('uc1').classList.add('done');
+  document.getElementById('btn12').disabled = false;
+  if(!fromDB){
+    await dbSet('f1',{name:file.name,b64:bufToBase64(buf),savedAt:Date.now()}).catch(()=>{});
+    await refreshSaved();
+  }
+}
+
+async function refreshSaved() {
+  const all = await dbGetAll().catch(()=>[]);
+  const c = document.getElementById('saved-list');
+  const files = all.filter(r=>r.id==='f1');
+  if(!files.length){c.innerHTML='<div class="aside-empty">ยังไม่มีไฟล์</div>';return;}
+  c.innerHTML='';
+  files.forEach(f=>{
+    const d=new Date(f.savedAt);
+    const ts=d.toLocaleDateString('th-TH',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    const box=document.createElement('div');box.className='aside-file-box';
+    box.innerHTML=`<div class="aside-file-name" title="${f.name}">📊 ${f.name}</div>
+      <div class="aside-file-meta">${ts}</div>
+      <div class="aside-file-acts">
+        <button class="aside-file-act" onclick="loadSaved('f1')">โหลด</button>
+        <button class="aside-file-act del" onclick="delSaved('f1')">ลบ</button>
+      </div>`;
+    c.appendChild(box);
+  });
+}
+async function loadSaved(id) {
+  const f=await dbGet(id).catch(()=>null);if(!f)return;
+  await loadFile(new File([base64ToBuf(f.b64)],f.name), true);
+}
+async function delSaved(id){if(!confirm('ลบไฟล์?'))return;await dbDel(id).catch(()=>{});refreshSaved();}
+
+// ─── OVAL EXTRACTION FROM DRAWING XML ────────────────────────────────────────
+async function extractOvals(buf) {
+  const rowToDay = {};
+  try {
+    const zip = await JSZip.loadAsync(buf);
+    const drawFile = zip.file('xl/drawings/drawing1.xml');
+    if (!drawFile) return rowToDay;
+    const xml = await drawFile.async('text');
+    const blocks = xml.match(/<xdr:twoCellAnchor>[\s\S]*?<\/xdr:twoCellAnchor>/g) || [];
+    blocks.forEach(block => {
+      const fromM = block.match(/<xdr:from>\s*<xdr:col>(\d+)<\/xdr:col>\s*<xdr:colOff>[^<]*<\/xdr:colOff>\s*<xdr:row>(\d+)<\/xdr:row>/);
+      if (fromM) {
+        const col0 = parseInt(fromM[1]);
+        const row0 = parseInt(fromM[2]);
+        const xlRow = row0 + 1;
+        const day = col0 - 8;            // col J (0-based 9) = day 1
+        if (!rowToDay[xlRow]) rowToDay[xlRow] = day;
+      }
+    });
+  } catch(e) { console.warn('extractOvals error:', e); }
+  return rowToDay;
+}
+
+// ─── PARSE PLAN SHEET ─────────────────────────────────────────────────────────
+const MONTHS={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+
+async function parsePlan(buf) {
+  const rowToDay = await extractOvals(buf);
+  const wb = XLSX.read(buf, { type:'array' });
+  const ws = wb.Sheets['Plan'];
+  if (!ws) throw new Error('ไม่พบ Sheet ชื่อ "Plan" ในไฟล์นี้');
+
+  const cellStr = addr => { const c = ws[addr]; return c ? String(c.v==null?'':c.v) : ''; };
+  // Detect month/year from J3 or B2 (e.g. "Jun / 2026")
+  let mm='', yyyy='';
+  const periodSrc = (cellStr('J3')+' '+cellStr('B2'));
+  const pm = periodSrc.match(/([A-Za-z]{3})[A-Za-z]*\s*\/\s*(\d{4})/);
+  if (pm) { mm = MONTHS[pm[1].toLowerCase().slice(0,3)]||''; yyyy = pm[2]; }
+  if (!mm || !yyyy) {
+    const now=new Date(); mm=String(now.getMonth()+1).padStart(2,'0'); yyyy=String(now.getFullYear());
+  }
+  S.period = (pm? pm[1]+' / '+yyyy : mm+'/'+yyyy);
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const records = [];
+  let dept='', line='';
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const getV = c => { const cell = ws[XLSX.utils.encode_cell({r,c})]; return cell ? String(cell.v==null?'':cell.v) : ''; };
+    const bVal = getV(1), cVal = getV(2), dVal = getV(3), eVal = getV(4);
+    if (!bVal) continue;
+    // Header row: dept [line : code]   (accept ANY uppercase dept code, not a fixed list)
+    const hm = bVal.match(/^([A-Z]{2,4})\s*\[([^\]:]+)/);
+    if (hm && !/^\d+$/.test(bVal.trim())) { dept = hm[1].trim(); line = hm[2].trim(); continue; }
+    // Data row
+    if (cVal && eVal && /^\d+$/.test(bVal.trim())) {
+      const desc = eVal.replace(/\s*\(.*/, '').trim();
+      const xlRow = r + 1;
+      const day = rowToDay[xlRow] || null;
+      const dateStr = day ? String(day).padStart(2,'0') + '/' + mm + '/' + yyyy : '';
+      records.push({ dept, line, order: cVal, equip: dVal, desc, date: dateStr });
+    }
+  }
+  if (!records.length) throw new Error('ไม่พบแถวข้อมูลใน Sheet "Plan" — ตรวจสอบรูปแบบไฟล์');
+  return records;
+}
+
+// ─── ANALYZE ──────────────────────────────────────────────────────────────────
+async function analyzePlan() {
+  if (!S.planFile) return;
+  const btn = document.getElementById('btn12');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>วิเคราะห์...';
+  await sleep(30);
+  try {
+    S.records = await parsePlan(S.planFile);
+  } catch(e) {
+    alert('❌ '+e.message);
+    btn.disabled=false; btn.innerHTML='วิเคราะห์และดูตัวอย่าง →'; return;
+  }
+  const withOval = S.records.filter(r=>r.date).length;
+  document.getElementById('sum-total').textContent = S.records.length;
+  document.getElementById('sum-oval').textContent = withOval;
+  document.getElementById('sum-no-oval').textContent = S.records.length - withOval;
+  document.getElementById('sum-period').textContent = S.period;
+  document.getElementById('aside-summary').style.display='';
+  buildPreview();
+  goPhase(2);
+  btn.disabled=false; btn.innerHTML='วิเคราะห์และดูตัวอย่าง →';
+}
+
+function buildPreview() {
+  const tbody = document.getElementById('preview-body');
+  const w = S.records.filter(r=>r.date).length;
+  document.getElementById('preview-meta').textContent =
+    `พบ ${S.records.length} รายการ · เดือน/ปี ${S.period} · มีวงกลม ${w} · ไม่มีวงกลม ${S.records.length-w}`;
+  tbody.innerHTML='';
+  S.records.forEach((rec,i)=>{
+    const tr=document.createElement('tr');
+    const pill=rec.date
+      ?`<span class="pill pill-green">● ${rec.date.split('/')[0]}</span>`
+      :`<span class="pill pill-amber">ไม่มี</span>`;
+    tr.innerHTML=`<td style="color:var(--muted)">${i+1}</td>
+      <td>${esc(rec.dept)}</td><td>${esc(rec.line)}</td>
+      <td style="font-family:var(--mono)">${esc(rec.order)}</td>
+      <td title="${esc(rec.desc)}">${esc(rec.desc)}</td>
+      <td style="font-family:var(--mono)">${esc(rec.equip)}</td>
+      <td style="font-family:var(--mono)">${esc(rec.date)||'—'}</td>
+      <td>${pill}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ─── BUILD MULTI-SHEET XLSX (ZIP surgery on embedded template) ───────────────
+function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// cell ref -> record key
+const CELLS = {V4:'order', F8:'line', N8:'dept', G9:'desc', W9:'equip', E10:'date'};
+
+function patchSheet(sheetXml, rec) {
+  let out = sheetXml;
+  for (const ref in CELLS) {
+    const val = xesc(rec[CELLS[ref]]);
+    const re = new RegExp('<c r="'+ref+'"([^>]*?)(?:/>|>[\\s\\S]*?</c>)');
+    out = out.replace(re, (m, attrs) => {
+      const sm = attrs.match(/\ss="\d+"/);
+      const sAttr = sm ? sm[0] : '';
+      return '<c r="'+ref+'"'+sAttr+' t="inlineStr"><is><t xml:space="preserve">'+val+'</t></is></c>';
+    });
+  }
+  return out;
+}
+
+function sheetName(i, rec){
+  let nm = i + '-' + rec.order;
+  nm = nm.replace(/[:\\/?*\[\]]/g,'').slice(0,31);
+  return nm;
+}
+
+async function buildWorkbook(records, onProgress) {
+  const tplBuf = base64ToBuf(window.TEMPLATE_B64);
+  const tpl = await JSZip.loadAsync(tplBuf);
+  const sheetXml = await tpl.file('xl/worksheets/sheet1.xml').async('string');
+  const sheetRels = await tpl.file('xl/worksheets/_rels/sheet1.xml.rels').async('string');
+  const drawXml  = await tpl.file('xl/drawings/drawing1.xml').async('string');
+
+  const out = new JSZip();
+  // shared static parts
+  const keep = ['_rels/.rels','xl/theme/theme1.xml','xl/styles.xml','xl/sharedStrings.xml',
+                'xl/printerSettings/printerSettings1.bin',
+                'docProps/core.xml','docProps/app.xml','docProps/custom.xml'];
+  for (const k of keep){ const f=tpl.file(k); if(f) out.file(k, await f.async('uint8array')); }
+
+  const N = records.length;
+  for (let i=1;i<=N;i++){
+    const rec = records[i-1];
+    out.file('xl/worksheets/sheet'+i+'.xml', patchSheet(sheetXml, rec));
+    out.file('xl/worksheets/_rels/sheet'+i+'.xml.rels',
+      sheetRels.replace('../drawings/drawing1.xml','../drawings/drawing'+i+'.xml'));
+    out.file('xl/drawings/drawing'+i+'.xml', drawXml.replace('id="2"','id="'+(i+1)+'"'));
+    if (i%20===0 || i===N) { onProgress && onProgress(i,N); await sleep(0); }
+  }
+
+  // [Content_Types].xml
+  let ov='';
+  for (let i=1;i<=N;i++){
+    ov+='<Override PartName="/xl/worksheets/sheet'+i+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+      + '<Override PartName="/xl/drawings/drawing'+i+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>';
+  }
+  out.file('[Content_Types].xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    ov+
+    '<Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>'+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+    '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'+
+    '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'+
+    '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'+
+    '<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>'+
+    '</Types>');
+
+  // xl/_rels/workbook.xml.rels
+  let rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  for (let i=1;i<=N;i++)
+    rels+='<Relationship Id="rId'+i+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+i+'.xml"/>';
+  rels+='<Relationship Id="rId'+(N+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
+        '<Relationship Id="rId'+(N+2)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>'+
+        '<Relationship Id="rId'+(N+3)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'+
+        '</Relationships>';
+  out.file('xl/_rels/workbook.xml.rels', rels);
+
+  // xl/workbook.xml  (per-sheet print area B1:Z69 — same as original template)
+  let sheetsX='', dn='';
+  for (let i=1;i<=N;i++){
+    const nm = xesc(sheetName(i, records[i-1]));
+    sheetsX += '<sheet name="'+nm+'" sheetId="'+i+'" r:id="rId'+i+'"/>';
+    dn += '<definedName name="_xlnm.Print_Area" localSheetId="'+(i-1)+'">\''+nm+'\'!$B$1:$Z$69</definedName>';
+  }
+  out.file('xl/workbook.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    '<fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="29822"/>'+
+    '<workbookPr defaultThemeVersion="124226"/>'+
+    '<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="14610" windowHeight="15585"/></bookViews>'+
+    '<sheets>'+sheetsX+'</sheets>'+
+    '<definedNames>'+dn+'</definedNames>'+
+    '<calcPr calcId="191029"/></workbook>');
+
+  return out.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression:'DEFLATE'
+  });
+}
+
+// ─── GENERATE ─────────────────────────────────────────────────────────────────
+async function startGenerate() {
+  const log = document.getElementById('log-box');
+  const fill = document.getElementById('prog-fill');
+  const progText = document.getElementById('prog-text');
+  const progPct = document.getElementById('prog-pct');
+  log.innerHTML=''; S.xlsxBlob=null;
+  const addLog = (msg,cls='')=>{const l=document.createElement('div');if(cls)l.className=cls;l.textContent=msg;log.appendChild(l);log.scrollTop=log.scrollHeight;};
+  const total = S.records.length;
+  addLog(`▶ สร้าง ${total} ใบบันทึก (1 ชีตต่อ 1 ใบ)...`);
+  try {
+    S.xlsxBlob = await buildWorkbook(S.records, (i,n)=>{
+      const pct=Math.round((i/n)*100);
+      fill.style.width=pct+'%'; progText.textContent=`เติมข้อมูลใบที่ ${i}/${n}`; progPct.textContent=pct+'%';
+      if(i%40===0||i===n) addLog(`✓ ${i}/${n}`,'ok');
+    });
+  } catch(e){
+    addLog('❌ ผิดพลาด: '+e.message,'err');
+    alert('❌ สร้างไฟล์ไม่สำเร็จ: '+e.message);
+    return;
+  }
+  fill.style.width='100%'; progPct.textContent='100%'; progText.textContent='เสร็จสิ้น';
+  addLog(`✅ เสร็จสิ้น! ไฟล์ขนาด ${(S.xlsxBlob.size/1024/1024).toFixed(2)} MB`,'ok');
+  showDone(total);
+}
+
+function showDone(total) {
+  goPhase(4);
+  document.getElementById('done-sub').textContent = `${total} ใบบันทึก · ${S.period} · พร้อมดาวน์โหลด`;
+  document.getElementById('done-stats').innerHTML = [
+    {v:total,l:'ใบบันทึก'},
+    {v:S.records.filter(r=>r.date).length,l:'มีวงกลม'},
+    {v:S.records.filter(r=>!r.date).length,l:'ไม่มีวงกลม'}
+  ].map(s=>`<div class="stat-item"><div class="stat-v">${s.v}</div><div class="stat-l">${s.l}</div></div>`).join('');
+  let w=0; const bar=document.getElementById('pbar');
+  const iv=setInterval(()=>{w=Math.min(w+3,100);bar.style.width=w+'%';if(w>=100)clearInterval(iv);},12);
+}
+
+function downloadXlsx() {
+  if (!S.xlsxBlob) return;
+  const base = (S.planName||'plan').replace(/\.(xlsx|xls)$/i,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(S.xlsxBlob);
+  a.download = 'ใบบันทึกสรุปการทำงาน_'+base+'.xlsx';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+
+// ─── PHASE NAV ────────────────────────────────────────────────────────────────
+function goPhase(n) {
+  document.querySelectorAll('.phase').forEach(p=>p.classList.remove('active'));
+  document.getElementById('phase'+n).classList.add('active');
+  ['sn1','sn2','sn3','sn4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.classList.remove('active','done');
+    if(i+1<n) el.classList.add('done');
+    else if(i+1===n) el.classList.add('active');
+  });
+  ['sb1','sb2'].forEach((id,i)=>{
+    document.getElementById(id)?.classList.toggle('active',i+1===n);
+  });
+}
+
+function resetAll() {
+  S.planFile=null;S.planName='';S.records=[];S.period='';S.xlsxBlob=null;
+  document.getElementById('dz1-ic').textContent='📁';
+  document.getElementById('dz1-lb').textContent='คลิกหรือลากไฟล์';
+  document.getElementById('dz1-hint').textContent='.xlsx .xls';
+  document.getElementById('dz1-fname').textContent='';
+  document.getElementById('dz1-meta').textContent='';
+  document.getElementById('dz1').classList.remove('ok','over');
+  document.getElementById('uc1').classList.remove('done');
+  document.getElementById('f1').value='';
+  document.getElementById('btn12').disabled=true;
+  document.getElementById('aside-summary').style.display='none';
+  goPhase(1);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async()=>{
+  if(typeof window.TEMPLATE_B64!=='string'||!window.TEMPLATE_B64){
+    alert('❌ ไม่พบเทมเพลตฟอร์ม (lib/template.js) — ตรวจสอบว่าอัปโหลดไฟล์ครบ');
+  }
+  await openDB().catch(()=>{});
+  setupDrop('dz1','f1');
+  await refreshSaved();
+  const f1 = await dbGet('f1').catch(()=>null);
+  if(f1){ await loadFile(new File([base64ToBuf(f1.b64)],f1.name), true).catch(()=>{}); }
+})();
+</script>
+</body>
+</html>
